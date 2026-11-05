@@ -16,9 +16,9 @@ PROVIDER_URL = os.environ.get(
     "TEAM_PROVIDER_URL",
     "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
 )
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.1"))
-REASONING = os.environ.get("GEMINI_REASONING_EFFORT", "none")  # "" to omit
+REASONING = os.environ.get("GEMINI_REASONING_EFFORT", "")  # "" to omit
 OUTPUT_CAP = int(os.environ.get("MAX_OUTPUT_CAP", "1024"))
 FALLBACK_TEXT = os.environ.get("FALLBACK_TEXT", "")
 MAX_BODY = 65536
@@ -60,7 +60,8 @@ async def call_provider(payload, key):
         try:
             r = await client.post(PROVIDER_URL, json=payload, headers=headers)
             if r.status_code == 429 or r.status_code >= 500:
-                log.info("provider status %s (attempt %d)", r.status_code, attempt + 1)
+                log.info("provider status %s (attempt %d) body=%s",
+                         r.status_code, attempt + 1, r.text[:300])
                 await asyncio.sleep(1)
                 continue
             if r.status_code >= 400:
