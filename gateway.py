@@ -20,12 +20,12 @@ MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.1"))
 REASONING = os.environ.get("GEMINI_REASONING_EFFORT", "none")  # "" to omit
 OUTPUT_CAP = int(os.environ.get("MAX_OUTPUT_CAP", "1024"))
-FALLBACK_TEXT = os.environ.get("FALLBACK_TEXT", "Model unavailable; no action taken.")
+FALLBACK_TEXT = os.environ.get("FALLBACK_TEXT", "")
 MAX_BODY = 65536
 
 app = FastAPI()
 
-client = httpx.AsyncClient(timeout=30.0, follow_redirects=False, trust_env=False)
+client = httpx.AsyncClient(timeout=20.0, follow_redirects=False, trust_env=False)
 limiter = asyncio.Semaphore(8)
 
 
@@ -63,6 +63,8 @@ async def call_provider(payload, key):
                 log.info("provider status %s (attempt %d)", r.status_code, attempt + 1)
                 await asyncio.sleep(1)
                 continue
+            if r.status_code >= 400:
+                log.info("provider rejected: status %s body=%s", r.status_code, r.text[:300])
             r.raise_for_status()
             return r.json()
         except (httpx.TimeoutException, httpx.TransportError) as e:
@@ -103,7 +105,7 @@ async def gateway(request: Request):
             payload["reasoning_effort"] = REASONING
 
         async with limiter:
-            result = await call_provider(payload, key)
+            result = await asyncio.wait_for(call_provider(payload, key), timeout=40)
 
         text = result["choices"][0]["message"]["content"]
         if not isinstance(text, str) or not 0 < len(text.encode()) <= 65536:
