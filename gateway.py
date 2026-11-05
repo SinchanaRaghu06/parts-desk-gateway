@@ -16,7 +16,7 @@ PROVIDER_URL = os.environ.get(
     "TEAM_PROVIDER_URL",
     "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
 )
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.1"))
 REASONING = os.environ.get("GEMINI_REASONING_EFFORT", "")  # "" to omit
 OUTPUT_CAP = int(os.environ.get("MAX_OUTPUT_CAP", "1024"))
